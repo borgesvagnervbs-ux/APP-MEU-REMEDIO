@@ -21,24 +21,25 @@
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
         <rect width="24" height="24" rx="6" fill="#0d9488"/>
       </svg>
-      <div style="flex:1">
+      <div>
         <h1>Lembrete de Medicamentos (PWA)</h1>
         <div class="small">Fale, fotografe e agende lembretes com som e vibração</div>
       </div>
-      <div style="min-width:160px">
-        <label class="small" style="margin-bottom:6px;display:block">Como quer ser chamado?</label>
-        <div class="row">
-          <input id="userName" type="text" placeholder="Seu nome" />
-          <button id="micUser" title="Falar nome">🎙️</button>
-        </div>
-      </div>
     </header>
+
+    <div class="card" id="userCard">
+      <label for="username">Como você quer ser chamado?</label>
+      <div class="row">
+        <input id="username" type="text" placeholder="Ex: Vagner" />
+        <button id="micUser" title="Falar nome">🎙️</button>
+      </div>
+    </div>
 
     <div class="card" id="formCard">
       <label for="name">Nome do medicamento</label>
       <div class="row">
         <input id="name" type="text" placeholder="Ex: Paracetamol" />
-        <button id="micName" title="Falar nome do remédio">🎙️</button>
+        <button id="micName" title="Falar nome">🎙️</button>
       </div>
 
       <label for="quantity">Quantidade / Dose</label>
@@ -50,18 +51,22 @@
       <label for="startTime">A partir de (data e hora)</label>
       <input id="startTime" type="datetime-local" />
 
-      <label for="interval">Intervalo (em minutos)</label>
-      <input id="interval" type="number" placeholder="Ex: 480 (8 horas)" min="1" />
+      <label for="intervalTime">Intervalo entre doses</label>
+      <div class="row">
+        <input id="intervalTime" type="time" step="60" />
+        <button id="micInterval" title="Falar intervalo">🎙️</button>
+      </div>
+      <div class="small">Formato HH:MM (ex: 08:00 = 8h, 00:30 = 30 min)</div>
 
-      <label>Pré-lembretes (avisar antes de tomar)</label>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-        <label class="small"><input type="checkbox" id="rem5" /> 5 min</label>
-        <label class="small"><input type="checkbox" id="rem3" /> 3 min</label>
-        <label class="small"><input type="checkbox" id="rem1" /> 1 min</label>
+      <label>Lembrar antes do horário:</label>
+      <div class="row">
+        <label><input type="checkbox" id="remind5"> 5 minutos antes</label>
+        <label><input type="checkbox" id="remind3"> 3 minutos antes</label>
+        <label><input type="checkbox" id="remind1"> 1 minuto antes</label>
       </div>
 
-      <label>Foto do remédio (capturar com câmera)</label>
-      <div class="row" style="align-items:center;">
+      <label>Foto do remédio</label>
+      <div class="row">
         <div class="image-preview" id="imgPreview"><span class="small">Sem foto</span></div>
         <input id="photo" type="file" accept="image/*" capture="environment" />
       </div>
@@ -71,7 +76,6 @@
         <button id="testNow" class="secondary">Testar agora</button>
         <button id="clearAll" class="secondary">Limpar</button>
       </div>
-      <div class="small">Permita notificações, microfone e câmera quando solicitado.</div>
     </div>
 
     <div class="card">
@@ -87,18 +91,9 @@
     <div class="overlay-card">
       <img id="overlayImg" src="" alt="remédio" />
       <div class="big" id="overlayText">Hora de tomar ...</div>
-
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button id="takenBtn" class="danger-btn">TOMEI O REMÉDIO</button>
-      </div>
-
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button id="snooze30" class="secondary" style="flex:1">Adiar 30 min</button>
-        <button id="snooze60" class="secondary" style="flex:1">Adiar 60 min</button>
-      </div>
-
-      <div style="height:6px"></div>
-      <div class="small">O alarme continuará até você confirmar.</div>
+      <button id="takenBtn" class="danger-btn">TOMEI O REMÉDIO</button>
+      <button id="snoozeBtn" class="secondary">Adiar 30 minutos</button>
+      <button id="snooze1hBtn" class="secondary" style="margin-top:8px">Adiar 1 hora</button>
     </div>
   </div>
 
