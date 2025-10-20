@@ -160,3 +160,10 @@ function triggerAlarm(med) {
   msg.lang = 'pt-BR';
   speechSynthesis.speak(msg);
 }
+
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persist().then(granted => {
+    console.log(granted ? "💾 Armazenamento persistente garantido!" : "⚠️ Armazenamento temporário.");
+  });
+}
+
