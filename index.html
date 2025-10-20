@@ -5,13 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Lembrete de Medicamentos (PWA)</title>
 
-<!-- Manifest / PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d9488">
 <link rel="icon" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-512.png">
 
-<!-- CSS -->
 <link rel="stylesheet" href="style.css">
 </head>
 
@@ -27,7 +25,7 @@
       </div>
     </header>
 
-    <div class="card" id="userCard">
+    <div class="card">
       <label for="username">Como você quer ser chamado?</label>
       <div class="row">
         <input id="username" type="text" placeholder="Ex: Vagner" />
@@ -60,9 +58,9 @@
 
       <label>Lembrar antes do horário:</label>
       <div class="row">
-        <label><input type="checkbox" id="remind5"> 5 minutos antes</label>
-        <label><input type="checkbox" id="remind3"> 3 minutos antes</label>
-        <label><input type="checkbox" id="remind1"> 1 minuto antes</label>
+        <label><input type="checkbox" id="remind5"> 5 min</label>
+        <label><input type="checkbox" id="remind3"> 3 min</label>
+        <label><input type="checkbox" id="remind1"> 1 min</label>
       </div>
 
       <label>Foto do remédio</label>
@@ -70,11 +68,12 @@
         <div class="image-preview" id="imgPreview"><span class="small">Sem foto</span></div>
         <input id="photo" type="file" accept="image/*" capture="environment" />
       </div>
+      <div class="small">Tire uma foto ou selecione uma imagem do remédio</div>
 
       <div class="row">
         <button id="saveBtn">Salvar lembrete</button>
         <button id="testNow" class="secondary">Testar agora</button>
-        <button id="clearAll" class="secondary">Limpar</button>
+        <button id="clearAll" class="secondary">Limpar tudo</button>
       </div>
     </div>
 
@@ -97,7 +96,6 @@
     </div>
   </div>
 
-  <!-- JS -->
   <script src="app.js"></script>
 </body>
 </html>
