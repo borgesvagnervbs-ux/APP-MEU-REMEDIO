@@ -4,7 +4,9 @@ const FILES_TO_CACHE = [
   'index.html',
   'manifest.json',
   'icons/icon-192.png',
-  'icons/icon-512.png'
+  'icons/icon-512.png',
+  'app.js',
+  'style.css'
 ];
 
 self.addEventListener('install', event => {
@@ -38,8 +40,8 @@ self.addEventListener('message', event => {
       body,
       icon,
       badge: 'icons/icon-192.png',
-      vibrate: [200,100,200],
-      requireInteraction: true,
+      vibrate: [200,100,200], // Vibrar, pausar, vibrar
+      requireInteraction: data.type === 'ALARM', // Força a notificação a ficar na tela
       data: data.data || {}
     };
     self.registration.showNotification(title, options);
@@ -48,14 +50,19 @@ self.addEventListener('message', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  // Se o usuário clicou em notificação, abre o app
+  
+  // Abre a janela do PWA quando a notificação é clicada
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      if(clientList.length > 0){
-        const client = clientList[0];
-        return client.focus();
+    clients.matchAll({ type: 'window' }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes('index.html') && 'focus' in client) {
+          return client.focus();
+        }
       }
-      return clients.openWindow('index.html');
+      if (clients.openWindow) {
+        return clients.openWindow('index.html');
+      }
+      return null;
     })
   );
 });
