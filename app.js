@@ -102,6 +102,7 @@ async function deleteMedIDB(id) {
 const STORAGE_KEY_USER = 'username'; // Mantém o username no localStorage por ser pequeno
 let meds = []; // Agora 'meds' será carregado do IndexedDB
 let lastImage = null;
+let lastTriggered = {}; // Variável para controlar o último alarme disparado por ID e evitar repetições
 
 // ELEMENTOS
 const usernameInput = document.getElementById('username');
@@ -145,6 +146,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       // Salva no IDB e limpa o localStorage
       for (const med of meds) {
           if (!med.id) med.id = Math.random().toString(36).substring(2, 9) + Date.now();
+          // Adiciona 'history' se não existir para evitar erros no cálculo
+          if (!med.history) med.history = []; 
           await saveMedIDB(med);
       }
       localStorage.removeItem('meds_v6');
@@ -225,10 +228,10 @@ saveBtn.addEventListener('click', async () => {
       intervalMinutes,
       img: lastImage, // Base64 da imagem
       remind,
-      history: []
+      history: [] // Garante que o histórico exista
     };
 
-    // NÃO USAMOS MAIS LOCALSTORAGE PARA OS DADOS! Usamos o IndexedDB (IDB)
+    // Salva no IndexedDB
     await saveMedIDB(med);
 
     meds.push(med); // Adiciona na lista em memória para renderizar
@@ -263,11 +266,7 @@ function renderList() {
     el.className = 'med-item';
     
     // Calcula o próximo horário
-    let nextTime = m.startTime;
-    const now = Date.now();
-    while (nextTime < now) {
-        nextTime += m.intervalMinutes * 60 * 1000;
-    }
+    let nextTime = getNextAlarmTime(m).nextTime;
     const nextTimeStr = new Date(nextTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
     el.innerHTML = `
@@ -307,35 +306,96 @@ medList.addEventListener('click', async event => {
     }
 });
 
+// === LÓGICA DE ALARME E NOTIFICAÇÃO ===
 
-// === LOGICA DE ALARME E NOTIFICAÇÃO (MANTIDA) ===
-const overlay = document.getElementById('overlay');
-const overlayText = document.getElementById('overlayText');
-const overlayImg = document.getElementById('overlayImg');
-let currentAlarm = null;
+/**
+ * Calcula o próximo horário de alarme.
+ * Se o histórico estiver vazio, a prioridade é o startTime.
+ */
+function getNextAlarmTime(med) {
+    const now = Date.now();
+    const startTime = med.startTime;
+    const intervalMs = med.intervalMinutes * 60 * 1000;
+    
+    // 1. Caso de uso único (intervalo 0)
+    if (intervalMs === 0 || med.intervalMinutes === 0) {
+        return { nextTime: startTime, isFirst: true };
+    }
+    
+    // 2. Caso de uso repetitivo:
+    
+    // Se nunca foi tomado (histórico vazio), o primeiro alarme é o startTime.
+    if (med.history.length === 0) {
+        // Se o startTime já passou de uma margem de 10 minutos, calculamos o próximo ciclo.
+        if (startTime < now - (10 * 60 * 1000)) {
+            // Se já passou, usamos a lógica de múltiplos para achar o próximo.
+            const timeElapsed = now - startTime;
+            const intervalsPassed = Math.floor(timeElapsed / intervalMs);
+            const nextTime = startTime + (intervalsPassed + 1) * intervalMs;
+            return { nextTime, isFirst: false };
+        } else {
+            // Se o startTime ainda está por vir, ou acabou de passar, usamos ele.
+            return { nextTime: startTime, isFirst: true };
+        }
+    }
+    
+    // Se já foi tomado, calcula o próximo a partir do último registro
+    const lastTakenTime = med.history[med.history.length - 1];
+    
+    // O próximo alarme é o último tomado + o intervalo
+    const nextTime = lastTakenTime + intervalMs;
+    
+    // Se nextTime for no passado, avançamos para o próximo múltiplo a partir do lastTakenTime.
+    if (nextTime < now - (10 * 60 * 1000)) { // Se passou de 10 minutos
+         const timeElapsed = now - lastTakenTime;
+         const intervalsPassed = Math.floor(timeElapsed / intervalMs);
+         return { nextTime: lastTakenTime + (intervalsPassed + 1) * intervalMs, isFirst: false };
+    }
+
+    return { nextTime, isFirst: false };
+}
+
 
 function checkAlarms() {
     const now = Date.now();
     
     meds.forEach(med => {
-        let nextTime = med.startTime;
-        while (nextTime <= now) {
-            nextTime += med.intervalMinutes * 60 * 1000;
+        // Usa a nova função para calcular o próximo alarme
+        const { nextTime } = getNextAlarmTime(med);
+        const alarmKey = med.id;
+        
+        // 1. VERIFICA SE O ALARME PRINCIPAL DEVE TOCAR:
+        // Margem de 1 minuto no passado (-60000ms) até 10 minutos no futuro (600000ms).
+        const timeToAlarm = nextTime - now;
+
+        if (timeToAlarm <= 600000 && timeToAlarm > -60000) {
+            // Verifica se o alarme para este 'nextTime' já foi disparado
+            if (lastTriggered[alarmKey] !== nextTime) {
+                triggerAlarm(med);
+                lastTriggered[alarmKey] = nextTime; // Marca o timestamp exato que disparou
+            }
+        } else if (timeToAlarm < -60000) {
+             // Limpa o estado se o alarme já tiver passado muito (para o próximo ciclo)
+             delete lastTriggered[alarmKey];
         }
 
-        // Verifica o alarme principal (na hora exata)
-        if (nextTime - now < 60000 && nextTime - now > 0 && currentAlarm !== med.id) {
-            triggerAlarm(med);
-            currentAlarm = med.id;
-            return;
-        }
-        
-        // Verifica lembretes (5, 3 ou 1 minuto antes)
+        // 2. VERIFICA OS LEMBRETES (5, 3 e 1 minuto antes)
         med.remind.forEach(min => {
             const reminderTime = nextTime - (min * 60000);
-            if (reminderTime - now < 60000 && reminderTime - now > 0 && currentAlarm !== `${med.id}-${min}`) {
-                triggerReminder(med, min);
-                currentAlarm = `${med.id}-${min}`;
+            const reminderKey = `${med.id}-${min}`;
+
+            // Condição para LEMBRETE (Tempo entre 1 minuto atrás e 1 minuto no futuro)
+            const timeToReminder = reminderTime - now;
+            
+            if (timeToReminder <= 60000 && timeToReminder > -60000) {
+                // O lembrete deve ser disparado se o alarme principal (nextTime) ainda não tiver sido.
+                if (lastTriggered[reminderKey] !== nextTime) {
+                    triggerReminder(med, min);
+                    lastTriggered[reminderKey] = nextTime; // Marca para o ciclo do nextTime
+                }
+            } else if (timeToReminder < -60000) {
+                 // Limpa o estado se o lembrete já tiver passado muito
+                 delete lastTriggered[reminderKey];
             }
         });
     });
@@ -343,17 +403,34 @@ function checkAlarms() {
 
 // Envia notificação via Service Worker
 function sendNotification(title, body, data) {
-    if (navigator.serviceWorker.controller) {
+    // Verifica se o Service Worker (SW) tem permissão de notificação e está ativo
+    if (Notification.permission === 'granted' && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
             type: 'SHOW_NOTIFICATION',
             title: title,
             body: body,
             data: data
         });
+    } else if (Notification.permission === 'default') {
+        // Se a permissão não foi pedida, pede ao usuário
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted' && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'SHOW_NOTIFICATION',
+                    title: title,
+                    body: body,
+                    data: data
+                });
+            }
+        });
     } else {
-        console.warn('Service Worker indisponível para notificação.');
+        console.warn('Permissão de notificação negada ou Service Worker indisponível.');
     }
 }
+
+const overlay = document.getElementById('overlay');
+const overlayText = document.getElementById('overlayText');
+const overlayImg = document.getElementById('overlayImg');
 
 function triggerAlarm(med) {
     const username = localStorage.getItem(STORAGE_KEY_USER) || 'Você';
@@ -386,13 +463,48 @@ function triggerReminder(med, min) {
 }
 
 // Ação de Tomado
-takenBtn.addEventListener('click', () => {
-    overlay.style.display = 'none';
-    currentAlarm = null;
-    if ('vibrate' in navigator) {
-        navigator.vibrate(0); // Para a vibração
+takenBtn.addEventListener('click', async () => {
+    // Identifica o medId baseado no último alarme disparado (poderia ser melhor se fosse passado por parâmetro no Overlay)
+    // Para simplificar, vamos limpar o overlay e registrar a tomada na lista de histórico do primeiro alarme ativo.
+    
+    let activeMed = null;
+    const now = Date.now();
+
+    // Tenta encontrar o medicamento que acabou de disparar
+    for (const med of meds) {
+        const { nextTime } = getNextAlarmTime(med);
+        // Se o alarme principal tiver tocado recentemente
+        if (lastTriggered[med.id] === nextTime) {
+            activeMed = med;
+            break;
+        }
     }
-    // TODO: Adicionar lógica para registrar na history do med (opcional)
+
+    if (activeMed) {
+        // Registra o tempo de tomada no histórico
+        activeMed.history.push(now);
+        // Remove entradas de histórico antigas (mantém apenas as últimas 10)
+        if (activeMed.history.length > 10) {
+            activeMed.history.shift();
+        }
+        
+        // Salva a atualização no IndexedDB
+        await saveMedIDB(activeMed);
+        
+        // Limpa o estado do alarme e a tela
+        delete lastTriggered[activeMed.id];
+        overlay.style.display = 'none';
+        if ('vibrate' in navigator) {
+            navigator.vibrate(0); // Para a vibração
+        }
+        renderList(); // Atualiza a lista com o novo 'Próximo' horário
+        alert(`✅ ${activeMed.name} registrado como tomado!`);
+    } else {
+        overlay.style.display = 'none';
+        if ('vibrate' in navigator) {
+            navigator.vibrate(0);
+        }
+    }
 });
 
 // Botão Testar Agora (Mantido)
@@ -416,6 +528,7 @@ clearAllBtn.addEventListener('click', async () => {
 
             // Limpa o array e a tela
             meds = [];
+            lastTriggered = {};
             renderList();
             localStorage.removeItem(STORAGE_KEY_USER);
             usernameInput.value = '';
