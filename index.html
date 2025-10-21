@@ -29,35 +29,27 @@
       <label for="username">Como você quer ser chamado?</label>
       <div class="row">
         <input id="username" type="text" placeholder="Ex: Vagner" />
-        <button id="micUser" title="Falar nome">🎙️</button>
+        <button id="clearAll" class="secondary">Limpar tudo</button>
       </div>
     </div>
+    
+    <div class="card">
+      <h3>Novo Lembrete</h3>
+      <label for="name">Nome do Remédio</label>
+      <input id="name" type="text" placeholder="Ex: Amoxicilina" required />
 
-    <div class="card" id="formCard">
-      <label for="name">Nome do medicamento</label>
-      <div class="row">
-        <input id="name" type="text" placeholder="Ex: Paracetamol" />
-        <button id="micName" title="Falar nome">🎙️</button>
-      </div>
+      <label for="quantity">Dose/Quantidade</label>
+      <input id="quantity" type="text" placeholder="Ex: 1 cápsula" required />
 
-      <label for="quantity">Quantidade / Dose</label>
-      <div class="row">
-        <input id="quantity" type="text" placeholder="Ex: 2 comprimidos" />
-        <button id="micQty" title="Falar quantidade">🎙️</button>
-      </div>
+      <label for="startTime">A partir de (Data e Hora)</label>
+      <input id="startTime" type="datetime-local" required />
 
-      <label for="startTime">A partir de (data e hora)</label>
-      <input id="startTime" type="datetime-local" />
-
-      <label for="intervalTime">Intervalo entre doses</label>
-      <div class="row">
-        <input id="intervalTime" type="time" step="60" />
-        <button id="micInterval" title="Falar intervalo">🎙️</button>
-      </div>
-      <div class="small">Formato HH:MM (ex: 08:00 = 8h, 00:30 = 30 min)</div>
+      <label for="intervalTime">Intervalo de repetição</label>
+      <input id="intervalTime" type="time" value="00:00" required />
+      <div class="small">Ex: 08:00 para 8 em 8 horas ou 00:00 para uso único</div>
 
       <label>Lembrar antes do horário:</label>
-      <div class="row">
+      <div class="row checkbox-row">
         <label><input type="checkbox" id="remind5"> 5 min</label>
         <label><input type="checkbox" id="remind3"> 3 min</label>
         <label><input type="checkbox" id="remind1"> 1 min</label>
@@ -73,7 +65,6 @@
       <div class="row">
         <button id="saveBtn">Salvar lembrete</button>
         <button id="testNow" class="secondary">Testar agora</button>
-        <button id="clearAll" class="secondary">Limpar tudo</button>
       </div>
     </div>
 
@@ -85,14 +76,16 @@
     <footer>Use Chrome no Android para melhor compatibilidade.</footer>
   </div>
 
-  <!-- Overlay do alarme -->
   <div id="overlay" class="overlay" style="display:none">
     <div class="overlay-card">
       <img id="overlayImg" src="" alt="remédio" />
       <div class="big" id="overlayText">Hora de tomar ...</div>
-      <button id="takenBtn" class="danger-btn">TOMEI O REMÉDIO</button>
-      <button id="snoozeBtn" class="secondary">Adiar 30 minutos</button>
-      <button id="snooze1hBtn" class="secondary" style="margin-top:8px">Adiar 1 hora</button>
+      
+      <div class="overlay-actions">
+          <button id="takenBtn">Tomei o remédio</button>
+          <button id="postpone30" class="secondary">Adiar 30 minutos</button>
+          <button id="postpone60" class="secondary">Adiar 1 hora</button>
+      </div>
     </div>
   </div>
 
