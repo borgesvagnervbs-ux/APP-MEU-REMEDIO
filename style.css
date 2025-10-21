@@ -52,7 +52,8 @@ label {
 
 input[type=text],
 input[type=number],
-input[type=datetime-local] {
+input[type=datetime-local],
+input[type=time] {
   width: 100%;
   padding: 10px;
   border: 1px solid #e6eef2;
@@ -63,6 +64,10 @@ input[type=datetime-local] {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.checkbox-row {
+  flex-wrap: wrap;
 }
 
 button {
@@ -81,6 +86,28 @@ button.secondary {
   color: var(--text);
 }
 
+/* Botão de voz (microfone) */
+.voice-btn {
+  background: #8b5cf6;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 0;
+  font-size: 1.2rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.voice-btn:hover {
+  background: #7c3aed;
+  transform: scale(1.05);
+}
+
+.voice-btn:active {
+  transform: scale(0.95);
+}
+
 .danger-btn {
   background: var(--danger);
   width: 100%;
@@ -89,6 +116,7 @@ button.secondary {
   border: 0;
   color: white;
   font-weight: 800;
+  cursor: pointer;
 }
 
 .image-preview {
@@ -140,18 +168,20 @@ button.secondary {
 }
 
 .actions {
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .history-list {
-  margin-top:8px;
-  font-size:0.85rem;
-  color:#334155;
-  background:#f8fafc;
-  padding:8px;
-  border-radius:6px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #334155;
+  background: #f8fafc;
+  padding: 8px;
+  border-radius: 6px;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .overlay {
@@ -162,6 +192,7 @@ button.secondary {
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  backdrop-filter: blur(4px);
 }
 
 .overlay-card {
@@ -171,6 +202,7 @@ button.secondary {
   text-align: center;
   max-width: 420px;
   width: 90%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
 .overlay-card img {
@@ -178,12 +210,27 @@ button.secondary {
   height: 160px;
   object-fit: contain;
   border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.overlay-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.overlay-actions button {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
 }
 
 .big {
   font-size: 1.2rem;
   font-weight: 800;
   margin: 12px 0;
+  color: var(--text);
 }
 
 footer {
