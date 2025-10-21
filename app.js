@@ -288,7 +288,7 @@ function checkAlarms() {
         const timeToAlarm = nextTime - now;
 
         // Condição: Tocar se estiver entre 1 minuto atrás e 10 minutos no futuro
-        if (timeToAlarm <= 600000 && timeToAlarm > -60000) {
+        if (timeToAlarm <= 60000 && timeToAlarm > -60000) {
             if (lastTriggered[alarmKey] !== nextTime) {
                 // Alarme encontrado, inicia o loop de repetição
                 startAlarmLoop(med, nextTime);
@@ -534,3 +534,45 @@ setInterval(checkAlarms, 10000);
 
 // Executa a primeira checagem imediatamente
 checkAlarms();
+
+function renderList() {
+    if (meds.length === 0) {
+        medList.innerHTML = '<div class="small">Nenhum lembrete cadastrado ainda.</div>';
+        return;
+    }
+
+    medList.innerHTML = meds.map(med => {
+        const { nextTime } = getNextAlarmTime(med);
+        const nextDate = new Date(nextTime);
+        const nextStr = nextDate.toLocaleString('pt-BR');
+        
+        const historyHTML = med.history.length > 0
+            ? `<div class="history-list"><strong>Histórico de tomadas:</strong><br>${
+                med.history.map(t => new Date(t).toLocaleString('pt-BR')).join('<br>')
+              }</div>`
+            : '<div class="small">Ainda não foi tomado</div>';
+
+        return `
+            <div class="med-item">
+                ${med.img ? `<img src="${med.img}" alt="${med.name}" />` : ''}
+                <div class="med-meta">
+                    <strong>${med.name}</strong> - ${med.qty}
+                    <div class="small">Próximo alarme: ${nextStr}</div>
+                    ${historyHTML}
+                </div>
+                <div class="actions">
+                    <button class="danger-btn" onclick="deleteMed('${med.id}')">Excluir</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function deleteMed(id) {
+    if (confirm('Excluir este lembrete?')) {
+        await deleteMedIDB(id);
+        meds = meds.filter(m => m.id !== id);
+        delete lastTriggered[id];
+        renderList();
+    }
+}
