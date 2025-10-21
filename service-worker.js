@@ -40,8 +40,8 @@ self.addEventListener('message', event => {
       body,
       icon,
       badge: 'icons/icon-192.png',
-      vibrate: [200,100,200], // Vibrar, pausar, vibrar
-      requireInteraction: data.type === 'ALARM', // Força a notificação a ficar na tela
+      vibrate: [200,100,200],
+      requireInteraction: true,
       data: data.data || {}
     };
     self.registration.showNotification(title, options);
