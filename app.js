@@ -91,15 +91,69 @@ const postpone30Btn = document.getElementById('postpone30');
 const postpone60Btn = document.getElementById('postpone60');
 const clearAllBtn = document.getElementById('clearAll');
 
+// Botões de voz
+const voiceUsernameBtn = document.getElementById('voiceUsername');
+const voiceNameBtn = document.getElementById('voiceName');
+const voiceQuantityBtn = document.getElementById('voiceQuantity');
+
 // Overlay do Alarme
 const overlay = document.getElementById('overlay');
 const overlayText = document.getElementById('overlayText');
 const overlayImg = document.getElementById('overlayImg');
 
-// Adiciona event listeners para os botões de adiar (ajustado para funcionar com o HTML)
+// Adiciona event listeners para os botões de adiar
 if(postpone30Btn) postpone30Btn.addEventListener('click', () => handlePostpone(30));
 if(postpone60Btn) postpone60Btn.addEventListener('click', () => handlePostpone(60));
 
+// === RECONHECIMENTO DE VOZ ===
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'pt-BR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+}
+
+function startVoiceRecognition(inputElement) {
+  if (!recognition) {
+    alert('Seu navegador não suporta reconhecimento de voz. Use Chrome ou Edge.');
+    return;
+  }
+
+  recognition.onstart = () => {
+    console.log('🎤 Reconhecimento de voz iniciado...');
+  };
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    inputElement.value = transcript;
+    console.log('✅ Reconhecido:', transcript);
+  };
+
+  recognition.onerror = (event) => {
+    console.error('❌ Erro no reconhecimento de voz:', event.error);
+    alert('Erro ao reconhecer a voz. Tente novamente.');
+  };
+
+  recognition.onend = () => {
+    console.log('🎤 Reconhecimento de voz finalizado.');
+  };
+
+  recognition.start();
+}
+
+// Event listeners para os botões de voz
+if (voiceUsernameBtn) {
+  voiceUsernameBtn.addEventListener('click', () => startVoiceRecognition(usernameInput));
+}
+if (voiceNameBtn) {
+  voiceNameBtn.addEventListener('click', () => startVoiceRecognition(nameInput));
+}
+if (voiceQuantityBtn) {
+  voiceQuantityBtn.addEventListener('click', () => startVoiceRecognition(qtyInput));
+}
 
 // === INICIALIZAÇÃO ===
 window.addEventListener('DOMContentLoaded', async () => {
@@ -125,9 +179,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Garante que o CSS para os botões Adiar está no index.html e que eles estão acessíveis
     console.log('Botões de adiar carregados:', !!postpone30Btn, !!postpone60Btn);
-
 });
 
 // === UTIL ===
@@ -199,7 +251,7 @@ saveBtn.addEventListener('click', async () => {
         meds.push(med);
         renderList();
         
-        // --- NOVO: Limpa os campos de configuração dos lembretes ---
+        // Limpa os campos de configuração dos lembretes
         nameInput.value = '';
         qtyInput.value = '';
         photoInput.value = '';
@@ -208,7 +260,7 @@ saveBtn.addEventListener('click', async () => {
         remind5.checked = false;
         remind3.checked = false;
         remind1.checked = false;
-        // Limpar os inputs de hora e intervalo é opcional, mas manteremos o padrão de fábrica
+        
         const now = new Date();
         now.setMinutes(now.getMinutes() + 1);
         const pad = n => n.toString().padStart(2, '0');
@@ -221,7 +273,6 @@ saveBtn.addEventListener('click', async () => {
         alert('Erro ao salvar o lembrete.');
     }
 });
-
 
 // === LÓGICA DE ALARME E NOTIFICAÇÃO ===
 
@@ -246,13 +297,11 @@ function getNextAlarmTime(med) {
     // Se nunca foi tomado (histórico vazio), o primeiro alarme é o startTime.
     if (med.history.length === 0) {
         if (startTime < now - (10 * 60 * 1000)) { // Se já passou de uma margem de 10 minutos
-            // Se já passou, usamos a lógica de múltiplos para achar o próximo.
             const timeElapsed = now - startTime;
             const intervalsPassed = Math.floor(timeElapsed / intervalMs);
             const nextTime = startTime + (intervalsPassed + 1) * intervalMs;
             return { nextTime, isFirst: false };
         } else {
-            // Se o startTime ainda está por vir, ou acabou de passar, usamos ele.
             return { nextTime: startTime, isFirst: true };
         }
     }
@@ -271,7 +320,6 @@ function getNextAlarmTime(med) {
     return { nextTime, isFirst: false };
 }
 
-
 function checkAlarms() {
     const now = Date.now();
     
@@ -287,13 +335,12 @@ function checkAlarms() {
         // 1. VERIFICA O ALARME PRINCIPAL (Tempo exato)
         const timeToAlarm = nextTime - now;
 
-        // Condição: Tocar se estiver entre 1 minuto atrás e 10 minutos no futuro
+        // CORREÇÃO: Condição para tocar se estiver entre 1 minuto no futuro e 1 minuto no passado
         if (timeToAlarm <= 60000 && timeToAlarm > -60000) {
             if (lastTriggered[alarmKey] !== nextTime) {
-                // Alarme encontrado, inicia o loop de repetição
                 startAlarmLoop(med, nextTime);
                 lastTriggered[alarmKey] = nextTime;
-                return; // Para a iteração para não verificar lembretes
+                return;
             }
         }
         
@@ -304,13 +351,12 @@ function checkAlarms() {
 
             const timeToReminder = reminderTime - now;
             
-            // Condição: Tocar se estiver entre 1 minuto atrás e 1 minuto no futuro
+            // CORREÇÃO: Condição para tocar lembretes entre 1 minuto no futuro e 1 minuto no passado
             if (timeToReminder <= 60000 && timeToReminder > -60000) {
                 if (lastTriggered[reminderKey] !== nextTime) {
-                    // Lembrete encontrado, inicia o loop de repetição
                     startReminderLoop(med, min, nextTime, reminderKey);
                     lastTriggered[reminderKey] = nextTime;
-                    return; // Para a iteração
+                    return;
                 }
             }
         });
@@ -326,32 +372,27 @@ function startAlarmLoop(med, nextTime) {
     if (activeAlarmLoop) clearInterval(activeAlarmLoop);
     currentActiveMed = med;
 
-    // Função que será repetida
     const repeatAlarm = () => {
         const username = localStorage.getItem(STORAGE_KEY_USER) || 'Você';
-        // Frase exata: (o nome escolhido) hora de tomar (quantidade indicada) de (remédio indicado)
         const text = `${username}, hora de tomar ${med.qty} de ${med.name}.`;
         
-        // Alerta na tela (Overlay)
         overlayText.innerText = text;
         overlayImg.src = med.img || 'icons/icon-512.png';
         overlay.style.display = 'flex';
         
-        // Notificação e Voz/Vibração
         sendNotification('🚨 ALARME DE MEDICAMENTO', text, { medId: med.id });
         speak(text);
         if ('vibrate' in navigator) {
             navigator.vibrate([1000, 500, 1000]);
         }
         
-        // O alarme só repete se estivermos dentro da margem de 10 minutos
         if (nextTime < Date.now() - (10 * 60 * 1000)) {
              stopAlarmLoop();
         }
     };
     
-    repeatAlarm(); // Toca imediatamente
-    activeAlarmLoop = setInterval(repeatAlarm, 10000); // Repete a cada 10 segundos
+    repeatAlarm();
+    activeAlarmLoop = setInterval(repeatAlarm, 10000);
 }
 
 /**
@@ -359,26 +400,21 @@ function startAlarmLoop(med, nextTime) {
  */
 function startReminderLoop(med, min, nextTime, reminderKey) {
     if (activeReminderLoop) clearInterval(activeReminderLoop);
-    // Não seta currentActiveMed, pois o botão "Tomei" só deve aparecer no alarme principal.
 
-    // Função que será repetida
     const repeatReminder = () => {
         const username = localStorage.getItem(STORAGE_KEY_USER) || 'Você';
-        // Frase exata: (o nome escolhido) faltam (minutos selecionados) para tomar (quantidade indicada) de (remédio indicado).
         const text = `${username}, faltam ${min} minutos para tomar ${med.qty} de ${med.name}.`;
         
-        // Notificação e Voz
         sendNotification('⏰ Lembrete de Medicamento', text);
         speak(text);
         
-        // O lembrete para assim que o alarme principal estiver prestes a tocar
-        if (nextTime < Date.now() + 60000) { // Menos de 1 minuto para o alarme
+        if (nextTime < Date.now() + 60000) {
              stopReminderLoop();
         }
     };
     
-    repeatReminder(); // Toca imediatamente
-    activeReminderLoop = setInterval(repeatReminder, 10000); // Repete a cada 10 segundos
+    repeatReminder();
+    activeReminderLoop = setInterval(repeatReminder, 10000);
 }
 
 /**
@@ -392,6 +428,9 @@ function stopAlarmLoop() {
     if ('vibrate' in navigator) {
         navigator.vibrate(0);
     }
+    if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+    }
 }
 
 /**
@@ -400,36 +439,37 @@ function stopAlarmLoop() {
 function stopReminderLoop() {
     if (activeReminderLoop) clearInterval(activeReminderLoop);
     activeReminderLoop = null;
-    if ('vibrate' in navigator) {
-        // Não vibra para o lembrete, mas para a voz se o usuário clicar
+    if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
     }
 }
-
 
 // === AÇÕES DO USUÁRIO NO OVERLAY ===
 
 // Ação de "Tomei o remédio"
 takenBtn.addEventListener('click', async () => {
     stopAlarmLoop();
-    stopReminderLoop(); // Garante que se um lembrete estiver ativo, ele para
+    stopReminderLoop();
 
     if (currentActiveMed) {
-        const med = currentActiveMed;
-        const now = Date.now();
-        
-        // Registra o tempo de tomada no histórico
-        med.history.push(now);
-        
-        // Salva a atualização no IndexedDB
-        await saveMedIDB(med);
-        
-        // Limpa o estado do alarme e atualiza a lista
-        delete lastTriggered[med.id];
-        renderList();
-        alert(`✅ ${med.name} registrado como tomado!`);
+        const med = meds.find(m => m.id === currentActiveMed.id);
+        if (med) {
+            const now = Date.now();
+            
+            // Registra o tempo de tomada no histórico
+            med.history.push(now);
+            
+            // Salva a atualização no IndexedDB
+            await saveMedIDB(med);
+            
+            // Limpa o estado do alarme e atualiza a lista
+            delete lastTriggered[med.id];
+            renderList();
+            
+            const horarioTomada = new Date(now).toLocaleString('pt-BR');
+            alert(`✅ ${med.name} registrado como tomado às ${horarioTomada}!`);
+        }
     } else {
-         // Caso de segurança se o botão foi clicado sem um alarme ativo
          alert('Nenhum alarme ativo para registrar a tomada.');
     }
 });
@@ -445,40 +485,25 @@ async function handlePostpone(minutes) {
         const med = currentActiveMed;
         const postponeMs = minutes * 60 * 1000;
         
-        // **ATENÇÃO: Mudar o startTime/history não é o ideal para adiar!**
-        // A melhor forma é adicionar o tempo de adiamento ao próximo horário de alarme
-        // e marcar o último alarme como "disparado".
-
-        // 1. Encontra o próximo horário que deveria tocar
         const { nextTime } = getNextAlarmTime(med);
-        
-        // 2. Define um novo 'último disparado' para forçar o próximo alarme a tocar no tempo adiado.
-        // Simulamos que o último alarme tocou no tempo 'nextTime + postponeMs'
         const newNextTime = nextTime + postponeMs;
         
-        // 3. Atualiza o registro 'lastTriggered' para o novo tempo
-        lastTriggered[med.id] = newNextTime - 1; // Ajuste para garantir que o checkAlarms() o veja como futuro
+        lastTriggered[med.id] = newNextTime - 1;
         
-        // Reinicia o loop de checagem. O próximo ciclo de checkAlarms()
-        // irá recalcular o alarme e, como o lastTriggered está no futuro,
-        // ele só tocará quando o tempo adiado for atingido.
         alert(`⏰ Lembrete de ${med.name} adiado por ${minutes} minutos.`);
         
-        // Força a rechecagem imediata
         checkAlarms();
-
     } else {
         alert('Nenhum alarme ativo para adiar.');
     }
 }
 
-// Botão Testar Agora (Mantido)
+// Botão Testar Agora
 document.getElementById('testNow').addEventListener('click', () => {
     if (meds.length) {
-        // Toca o primeiro lembrete encontrado como um alarme principal
         const med = meds[0];
-        const nextTime = Date.now() + 1000; // Toca em 1 segundo
-        lastTriggered[med.id] = nextTime - 1; // Reseta o estado
+        const nextTime = Date.now() + 1000;
+        lastTriggered[med.id] = nextTime - 1;
         startAlarmLoop(med, nextTime);
     } else {
         alert('Cadastre um lembrete para testar o alarme.');
@@ -487,7 +512,6 @@ document.getElementById('testNow').addEventListener('click', () => {
 
 // Botão Limpar Tudo
 clearAllBtn.addEventListener('click', async () => {
-    // ... (Mantido o código de limpar tudo) ...
     if (confirm('ATENÇÃO: Isso excluirá TODOS os seus lembretes e dados. Tem certeza?')) {
         try {
             const conn = await openDB();
@@ -511,30 +535,7 @@ clearAllBtn.addEventListener('click', async () => {
     }
 });
 
-// Envia notificação via Service Worker
-function sendNotification(title, body, data) {
-    if (Notification.permission === 'granted' && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'SHOW_NOTIFICATION',
-            title: title,
-            body: body,
-            data: data
-        });
-    } else if (Notification.permission === 'default') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted' && navigator.serviceWorker.controller) {
-                sendNotification(title, body, data);
-            }
-        });
-    }
-}
-
-// Checa alarmes a cada 10 segundos
-setInterval(checkAlarms, 10000);
-
-// Executa a primeira checagem imediatamente
-checkAlarms();
-
+// === RENDERIZAR LISTA DE LEMBRETES ===
 function renderList() {
     if (meds.length === 0) {
         medList.innerHTML = '<div class="small">Nenhum lembrete cadastrado ainda.</div>';
@@ -574,5 +575,30 @@ async function deleteMed(id) {
         meds = meds.filter(m => m.id !== id);
         delete lastTriggered[id];
         renderList();
+        alert('🗑️ Lembrete excluído com sucesso!');
     }
 }
+
+// Envia notificação via Service Worker
+function sendNotification(title, body, data) {
+    if (Notification.permission === 'granted' && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SHOW_NOTIFICATION',
+            title: title,
+            body: body,
+            data: data
+        });
+    } else if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted' && navigator.serviceWorker.controller) {
+                sendNotification(title, body, data);
+            }
+        });
+    }
+}
+
+// Checa alarmes a cada 10 segundos
+setInterval(checkAlarms, 10000);
+
+// Executa a primeira checagem imediatamente
+checkAlarms();
