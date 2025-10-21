@@ -29,17 +29,25 @@
       <label for="username">Como você quer ser chamado?</label>
       <div class="row">
         <input id="username" type="text" placeholder="Ex: Vagner" />
+        <button id="voiceUsername" class="voice-btn" title="Falar o nome">🎤</button>
         <button id="clearAll" class="secondary">Limpar tudo</button>
       </div>
     </div>
     
     <div class="card">
       <h3>Novo Lembrete</h3>
+      
       <label for="name">Nome do Remédio</label>
-      <input id="name" type="text" placeholder="Ex: Amoxicilina" required />
+      <div class="row">
+        <input id="name" type="text" placeholder="Ex: Amoxicilina" required />
+        <button id="voiceName" class="voice-btn" title="Falar o nome do remédio">🎤</button>
+      </div>
 
       <label for="quantity">Dose/Quantidade</label>
-      <input id="quantity" type="text" placeholder="Ex: 1 cápsula" required />
+      <div class="row">
+        <input id="quantity" type="text" placeholder="Ex: 1 cápsula" required />
+        <button id="voiceQuantity" class="voice-btn" title="Falar a quantidade">🎤</button>
+      </div>
 
       <label for="startTime">A partir de (Data e Hora)</label>
       <input id="startTime" type="datetime-local" required />
