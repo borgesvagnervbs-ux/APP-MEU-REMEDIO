@@ -205,6 +205,7 @@ button.btn-primary {
   border-radius: 6px;
   max-height: 150px;
   overflow-y: auto;
+  line-height: 1.6;
 }
 
 /* === OVERLAY DO ALARME (Hora de tomar) === */
@@ -375,5 +376,5 @@ footer {
 }
 
 .overlay-card.alarm-card {
-  animation: bounceIn 0.5s ease, shake 0.5s ease 0.5s;
+  animation: bounceIn 0.5s ease, shake 0.5s ease 0.5s infinite;
 }
