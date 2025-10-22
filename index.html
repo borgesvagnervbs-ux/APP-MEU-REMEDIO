@@ -84,15 +84,29 @@
     <footer>Use Chrome no Android para melhor compatibilidade.</footer>
   </div>
 
+  <!-- Overlay do ALARME (hora de tomar) -->
   <div id="overlay" class="overlay" style="display:none">
-    <div class="overlay-card">
+    <div class="overlay-card alarm-card">
       <img id="overlayImg" src="" alt="remédio" />
       <div class="big" id="overlayText">Hora de tomar ...</div>
       
       <div class="overlay-actions">
-          <button id="takenBtn">Tomei o remédio</button>
+          <button id="takenBtn" class="btn-primary">Tomei o remédio</button>
           <button id="postpone30" class="secondary">Adiar 30 minutos</button>
           <button id="postpone60" class="secondary">Adiar 1 hora</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay do LEMBRETE (minutos antes) -->
+  <div id="reminderOverlay" class="overlay reminder-overlay" style="display:none">
+    <div class="overlay-card reminder-card">
+      <div class="reminder-icon">⏰</div>
+      <img id="reminderImg" src="" alt="remédio" />
+      <div class="big reminder-text" id="reminderText">Faltam X minutos...</div>
+      
+      <div class="overlay-actions">
+          <button id="reminderOkBtn" class="btn-primary">OK, Entendi</button>
       </div>
     </div>
   </div>
