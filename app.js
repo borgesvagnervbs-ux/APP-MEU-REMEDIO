@@ -101,9 +101,20 @@ const overlay = document.getElementById('overlay');
 const overlayText = document.getElementById('overlayText');
 const overlayImg = document.getElementById('overlayImg');
 
+// Overlay do Lembrete
+const reminderOverlay = document.getElementById('reminderOverlay');
+const reminderText = document.getElementById('reminderText');
+const reminderImg = document.getElementById('reminderImg');
+const reminderOkBtn = document.getElementById('reminderOkBtn');
+
 // Adiciona event listeners para os botões de adiar
 if(postpone30Btn) postpone30Btn.addEventListener('click', () => handlePostpone(30));
 if(postpone60Btn) postpone60Btn.addEventListener('click', () => handlePostpone(60));
+
+// Event listener para o botão OK do lembrete
+if(reminderOkBtn) reminderOkBtn.addEventListener('click', () => {
+    stopReminderLoop();
+});
 
 // === RECONHECIMENTO DE VOZ ===
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -267,7 +278,7 @@ saveBtn.addEventListener('click', async () => {
         startInput.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
         intervalInput.value = '00:30';
 
-        alert('💾 Lembrete salvo com sucesso! (Armazenado no IndexedDB)');
+        alert('💾 Lembrete salvo com sucesso!');
     } catch (err) {
         console.error('Erro ao salvar no IndexedDB:', err);
         alert('Erro ao salvar o lembrete.');
@@ -405,8 +416,16 @@ function startReminderLoop(med, min, nextTime, reminderKey) {
         const username = localStorage.getItem(STORAGE_KEY_USER) || 'Você';
         const text = `${username}, faltam ${min} minutos para tomar ${med.qty} de ${med.name}.`;
         
+        // CORREÇÃO: Exibe o overlay do lembrete
+        reminderText.innerText = text;
+        reminderImg.src = med.img || 'icons/icon-512.png';
+        reminderOverlay.style.display = 'flex';
+        
         sendNotification('⏰ Lembrete de Medicamento', text);
         speak(text);
+        if ('vibrate' in navigator) {
+            navigator.vibrate([500, 200, 500]);
+        }
         
         if (nextTime < Date.now() + 60000) {
              stopReminderLoop();
@@ -439,6 +458,10 @@ function stopAlarmLoop() {
 function stopReminderLoop() {
     if (activeReminderLoop) clearInterval(activeReminderLoop);
     activeReminderLoop = null;
+    reminderOverlay.style.display = 'none';
+    if ('vibrate' in navigator) {
+        navigator.vibrate(0);
+    }
     if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
     }
