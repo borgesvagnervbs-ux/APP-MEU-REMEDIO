@@ -378,6 +378,7 @@ function checkAlarms() {
 
 /**
  * Inicia o loop de repetição do alarme principal.
+ * O alarme persiste até o usuário clicar em "Tomei" ou "Adiar"
  */
 function startAlarmLoop(med, nextTime) {
     if (activeAlarmLoop) clearInterval(activeAlarmLoop);
@@ -396,13 +397,10 @@ function startAlarmLoop(med, nextTime) {
         if ('vibrate' in navigator) {
             navigator.vibrate([1000, 500, 1000]);
         }
-        
-        if (nextTime < Date.now() - (10 * 60 * 1000)) {
-             stopAlarmLoop();
-        }
     };
     
     repeatAlarm();
+    // O alarme repete indefinidamente a cada 10 segundos até ser interrompido pelo usuário
     activeAlarmLoop = setInterval(repeatAlarm, 10000);
 }
 
@@ -471,9 +469,6 @@ function stopReminderLoop() {
 
 // Ação de "Tomei o remédio"
 takenBtn.addEventListener('click', async () => {
-    stopAlarmLoop();
-    stopReminderLoop();
-
     if (currentActiveMed) {
         const med = meds.find(m => m.id === currentActiveMed.id);
         if (med) {
@@ -485,15 +480,18 @@ takenBtn.addEventListener('click', async () => {
             // Salva a atualização no IndexedDB
             await saveMedIDB(med);
             
-            // Limpa o estado do alarme e atualiza a lista
+            // Para o alarme e limpa o estado
+            stopAlarmLoop();
+            stopReminderLoop();
+            
+            // Limpa o estado do alarme para permitir o próximo
             delete lastTriggered[med.id];
+            
+            // Atualiza a lista para mostrar o histórico atualizado
             renderList();
             
-            const horarioTomada = new Date(now).toLocaleString('pt-BR');
-            alert(`✅ ${med.name} registrado como tomado às ${horarioTomada}!`);
+            console.log(`✅ ${med.name} registrado como tomado às ${new Date(now).toLocaleString('pt-BR')}`);
         }
-    } else {
-         alert('Nenhum alarme ativo para registrar a tomada.');
     }
 });
 
@@ -501,9 +499,6 @@ takenBtn.addEventListener('click', async () => {
  * Ação de "Adiar" (30 ou 60 minutos).
  */
 async function handlePostpone(minutes) {
-    stopAlarmLoop();
-    stopReminderLoop();
-
     if (currentActiveMed) {
         const med = currentActiveMed;
         const postponeMs = minutes * 60 * 1000;
@@ -511,13 +506,17 @@ async function handlePostpone(minutes) {
         const { nextTime } = getNextAlarmTime(med);
         const newNextTime = nextTime + postponeMs;
         
+        // Para o alarme atual
+        stopAlarmLoop();
+        stopReminderLoop();
+        
+        // Define o novo tempo para o próximo alarme
         lastTriggered[med.id] = newNextTime - 1;
         
-        alert(`⏰ Lembrete de ${med.name} adiado por ${minutes} minutos.`);
+        console.log(`⏰ Lembrete de ${med.name} adiado por ${minutes} minutos.`);
         
-        checkAlarms();
-    } else {
-        alert('Nenhum alarme ativo para adiar.');
+        // Verifica se há alarmes para disparar
+        setTimeout(() => checkAlarms(), 1000);
     }
 }
 
@@ -571,8 +570,8 @@ function renderList() {
         const nextStr = nextDate.toLocaleString('pt-BR');
         
         const historyHTML = med.history.length > 0
-            ? `<div class="history-list"><strong>Histórico de tomadas:</strong><br>${
-                med.history.map(t => new Date(t).toLocaleString('pt-BR')).join('<br>')
+            ? `<div class="history-list"><strong>Histórico de tomadas (${med.history.length}):</strong><br>${
+                med.history.map(t => `✅ ${new Date(t).toLocaleString('pt-BR')}`).join('<br>')
               }</div>`
             : '<div class="small">Ainda não foi tomado</div>';
 
